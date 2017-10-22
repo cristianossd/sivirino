@@ -1,12 +1,9 @@
 from flask import Flask, jsonify, make_response, abort
 from dns import resolver
 import re
+import smtplib as smtp
 
 app = Flask(__name__)
-
-@app.route('/')
-def index():
-    return "Hello, World!"
 
 @app.route("/api/email/<email>/validate", methods=["GET"])
 def validate_email(email):
@@ -17,10 +14,22 @@ def validate_email(email):
 
     if (match_res):
         BAD_DNS = "92.242.140.20"
-        dns = match_res.groups()[1]
+        user, dns = match_res.groups()
         answers = resolver.query(dns)
         for answer in answers:
             abort(500) if answer.to_text() == BAD_DNS else None
+
+        record = answers[0].to_text()
+        server = smtp.SMTP()
+        server.set_debuglevel(0)
+
+        server.connect(record)
+        server.helo(dns)
+        server.mail(email)
+        code, message = server.rcpt(email)
+        server.quit()
+
+        abort(500) if code != 250 else None
     else:
         abort(500)
 
