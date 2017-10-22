@@ -1,4 +1,5 @@
 from flask import Flask, jsonify, make_response, abort
+from dns import resolver
 import re
 
 app = Flask(__name__)
@@ -15,12 +16,15 @@ def validate_email(email):
     match_res = validator.match(email)
 
     if (match_res):
-        print match_res.groups()
+        BAD_DNS = "92.242.140.20"
+        dns = match_res.groups()[1]
+        answers = resolver.query(dns)
+        for answer in answers:
+            abort(500) if answer.to_text() == BAD_DNS else None
     else:
         abort(500)
 
-
-    return make_response("Ok", 200)
+    return make_response(jsonify({"success": True}), 200)
 
 @app.errorhandler(404)
 def not_found(error):
