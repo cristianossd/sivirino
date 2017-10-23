@@ -1,7 +1,8 @@
+import re
+import socket
+import smtplib as smtp
 from flask import Flask, jsonify, make_response, abort
 from dns import resolver
-import re
-import smtplib as smtp
 
 app = Flask(__name__)
 
@@ -13,18 +14,20 @@ def validate_email(email):
     match_res = validator.match(email)
 
     if (match_res):
-        BAD_DNS = "92.242.140.20"
         user, dns = match_res.groups()
-        answers = resolver.query(dns)
-        for answer in answers:
-            abort(500) if answer.to_text() == BAD_DNS else None
+        try:
+            answers = resolver.query(dns, 'MX')
+        except:
+            abort(500)
 
-        record = answers[0].to_text()
+        host = socket.gethostname()
+
+        record = str(answers[0].exchange)
         server = smtp.SMTP()
         server.set_debuglevel(0)
 
         server.connect(record)
-        server.helo(dns)
+        server.helo(host)
         server.mail(email)
         code, message = server.rcpt(email)
         server.quit()
