@@ -42,5 +42,9 @@ def validate_email(email):
 def not_found(error):
     return make_response(jsonify({"error": "Not found"}), 404)
 
+@app.errorhandler(500)
+def internal_error(error):
+    return make_response(jsonify({"error": "Internal server error"}), 500)
+
 if __name__ == "__main__":
     app.run(debug=True)
